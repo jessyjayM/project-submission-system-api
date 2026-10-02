@@ -1,0 +1,99 @@
+spring:
+  application:
+    name: tcc-workflow
+
+  datasource:
+    # Por defeito usa o PostgreSQL instalado nesta maquina (porto 5432).
+    # Para usar antes o container do docker-compose, que publica em 5433:
+    #   DB_URL=jdbc:postgresql://localhost:5433/isctem_tcc DB_USER=isctem DB_PASSWORD=isctem
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/isctem_tcc}
+    username: ${DB_USER:postgres}
+    password: ${DB_PASSWORD:787899}
+    hikari:
+      pool-name: isctem-tcc-pool
+      maximum-pool-size: 10
+
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        jdbc.time_zone: Africa/Maputo
+        format_sql: false
+
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+
+  servlet:
+    multipart:
+      # RF06: tamanho maximo por ficheiro (20 MB, valor a confirmar com o ISCTEM)
+      max-file-size: 20MB
+      max-request-size: 25MB
+
+  mail:
+    host: ${MAIL_HOST:localhost}
+    port: ${MAIL_PORT:1025}
+    username: ${MAIL_USER:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail.smtp.auth: ${MAIL_AUTH:false}
+      mail.smtp.starttls.enable: ${MAIL_STARTTLS:false}
+
+  threads:
+    virtual:
+      enabled: true
+
+server:
+  # 8080 esta ocupado por outro servico nesta maquina (Keycloak).
+  port: ${SERVER_PORT:8081}
+  error:
+    include-message: always
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: when-authorized
+
+logging:
+  level:
+    mz.co.isctem.tcc: ${LOG_LEVEL:INFO}
+
+isctem:
+  security:
+    # HS256. Em producao definir JWT_SECRET com >= 32 caracteres aleatorios.
+    jwt-secret: ${JWT_SECRET:desenvolvimento-isctem-tcc-chave-hmac-nao-usar-em-producao}
+    access-token-ttl: PT2H
+    refresh-token-ttl: P7D
+    max-failed-attempts: 5
+    lock-duration: PT15M
+    senha-tamanho-minimo: 8
+  storage:
+    # RF06: os ficheiros ficam no sistema de ficheiros do servidor,
+    # com a referencia guardada na base de dados.
+    root: ${STORAGE_ROOT:./data/documentos}
+    formatos-aceites: pdf,doc,docx
+    tamanho-maximo-bytes: 20971520
+  plagio:
+    # RF08: limiar a partir do qual a submissao e assinalada ao supervisor.
+    limiar-alerta: 0.30
+    max-documentos-semelhantes: 5
+    min-termos: 20
+  notificacoes:
+    # RF09: email desligado por defeito ate haver credenciais SMTP do ISCTEM.
+    email-activo: ${EMAIL_ACTIVO:false}
+    remetente: ${EMAIL_REMETENTE:nao-responder@isctem.co.mz}
+  cors:
+    origens: ${CORS_ORIGINS:http://localhost:3000}
+  seed:
+    # Cria a conta de Administrador no primeiro arranque, se ainda nao existir nenhuma.
+    admin-inicial: true
+    admin-email: ${ADMIN_EMAIL:admin@isctem.co.mz}
+    admin-senha: ${ADMIN_SENHA:Admin@2026}
+    # Dados de demonstracao (coordenador, docentes, estudantes e prazos).
+    demo: ${SEED_DEMO:true}
